@@ -66,7 +66,7 @@ app.post("/signup", async(req, res) => {
     }
 })
 
-app.get("/users", async (req, res) => {
+/*app.get("/users", async (req, res) => {
   const id = req.query.id;
 
   const query1 = "SELECT * FROM users WHERE id = $1";
@@ -93,7 +93,34 @@ app.get("/users", async (req, res) => {
     console.error("Error fetching user data:", error);
     res.status(500).json({ error: "Failed to fetch user data" });
   }
+});*/
+
+//join query
+app.get("/users", async (req, res) => {
+    const id = req.query.id;
+    const query = `SELECT u.username, u.email, a.city, a.country, a.street, a.pincode
+               FROM users u JOIN address a ON u.id = a.user_id
+               WHERE u.id = $1`;
+
+    try {
+        if (!id) {
+            return res.status(400).json({ error: "User ID is required" });
+        }
+
+        const response = await db.query(query, [id]);
+
+        if (response.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json(response.rows[0]);
+
+    } catch (error) {
+        console.error("Error fetching user data:", error);
+        res.status(500).json({ error: "Failed to fetch user data" });
+    }
 });
+
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`)
