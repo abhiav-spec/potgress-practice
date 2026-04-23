@@ -66,6 +66,35 @@ app.post("/signup", async(req, res) => {
     }
 })
 
+app.get("/users", async (req, res) => {
+  const id = req.query.id;
+
+  const query1 = "SELECT * FROM users WHERE id = $1";
+  const query2 = "SELECT * FROM address WHERE user_id = $1";
+
+  try {
+    if (!id) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    const userResponse = await db.query(query1, [id]);
+    const addressResponse = await db.query(query2, [id]);
+
+    if (userResponse.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({
+      user: userResponse.rows[0],
+      address: addressResponse.rows[0] || null
+    });
+
+  } catch (error) {
+    console.error("Error fetching user data:", error);
+    res.status(500).json({ error: "Failed to fetch user data" });
+  }
+});
+
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`)
 })
