@@ -1,10 +1,10 @@
-import { Client } from 'pg'
+import { Pool } from 'pg'
 import express from 'express'
 
 const app = express()
 const port = 3000
 
-const pgclient2 = new Client({
+const db = new Pool({
     user: "neondb_owner",
     host: "ep-silent-flower-aoqmmhui-pooler.c-2.ap-southeast-1.aws.neon.tech",
     database: "neondb",
@@ -13,11 +13,14 @@ const pgclient2 = new Client({
     ssl: true
 })
 
+db.on("error", (error) => {
+    console.error("PostgreSQL pool error:", error)
+})
+
 async function connect() {
     try{
-        await pgclient2.connect()
+        const response = await db.query("SELECT * FROM users")
         console.log("Connected to PostgreSQL database")
-        const response = await pgclient2.query("SELECT * FROM users")
         console.log("Users:", response.rows)
     } catch (error) {
         console.error("Error connecting to PostgreSQL database:", error)
@@ -31,7 +34,7 @@ app.use(express.json())
 app.post("/signup", async(req, res) => {
     try {
         const { username, password, email } = req.body
-        const response = await pgclient2.query(
+        const response = await db.query(
             "INSERT INTO users (username, password, email) VALUES ($1, $2, $3) RETURNING *",
             [username, password, email]
         )
