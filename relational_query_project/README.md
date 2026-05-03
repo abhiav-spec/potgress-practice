@@ -1,51 +1,73 @@
 # Relational Query Project
 
 ## Introduction
-This project is a Node.js + Express backend that demonstrates how to work with relational data in PostgreSQL using the `pg` library.
+This project is a small Node.js and Express backend that demonstrates how relational data works in PostgreSQL. It uses the `pg` package to connect to a Neon-hosted PostgreSQL database and shows two core ideas that come up in real backend work:
 
-The code currently focuses on two related tables:
-- `users`
-- `address`
+1. Writing related data safely across multiple tables.
+2. Reading related data back with SQL joins.
 
-It shows how to:
-- Insert related records safely using database transactions (`BEGIN`, `COMMIT`, `ROLLBACK`)
-- Query relational data using SQL joins
-- Build API endpoints to write and read relational data
+The app centers around two tables:
 
-## Table of Contents
-1. [Project Overview](#project-overview)
-2. [Tech Stack](#tech-stack)
-3. [Current API Endpoints](#current-api-endpoints)
-4. [Database Schema for This Project](#database-schema-for-this-project)
-5. [Understanding Relational Queries](#understanding-relational-queries)
-6. [Transactions in PostgreSQL](#transactions-in-postgresql)
-7. [Joins and Types of Joins](#joins-and-types-of-joins)
-8. [Join Examples with Sample Tables and Data](#join-examples-with-sample-tables-and-data)
-9. [Backend Code Walkthrough](#backend-code-walkthrough)
-10. [How to Run the Project](#how-to-run-the-project)
-11. [How to Test APIs](#how-to-test-apis)
-12. [Important Notes and Improvements](#important-notes-and-improvements)
+- `users` stores account details such as username, email, and password.
+- `address` stores the user’s location data and is linked to `users` through `user_id`.
 
-## Project Overview
-This backend handles user signup in two steps:
-1. Insert user details into the `users` table
-2. Insert the user address into the `address` table
+This makes the project a good beginner example of relational database design because it shows how one logical entity can be split across multiple tables while still being treated as one workflow in the backend.
 
-Both steps are done inside one transaction so partial writes do not happen.
+## What This Project Does
+The current backend supports two main flows:
 
-A GET endpoint then fetches user + address data using a join query.
+- It creates a user and the related address inside one transaction.
+- It reads a user with their address using a join query.
+
+That means the project is not just about CRUD endpoints. It is really about understanding how backend code, SQL, and database integrity work together.
 
 ## Tech Stack
-- Node.js (ES Modules)
-- Express
-- PostgreSQL
-- `pg` package (`Pool`)
+- Node.js with ES Modules
+- Express for routing and JSON handling
+- PostgreSQL as the database
+- `pg` for database access
 
-## Current API Endpoints
+## Project Structure
+- `index.js` contains the Express server, database pool, transaction logic, and routes.
+- `package.json` defines the project metadata and dependencies.
+- `README.md` explains the database ideas, APIs, and learning outcomes.
+
+## Database Design
+The project uses a parent-child relationship between the tables.
+
+- `users.id` is the primary key.
+- `address.user_id` is a foreign key that points back to `users.id`.
+
+This relationship means one user can have one related address row, or multiple if the business rules change later. For this project, the main idea is that address data belongs to a user.
+
+Suggested schema:
+
+```sql
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(100) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE address (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  city VARCHAR(100),
+  country VARCHAR(100),
+  street VARCHAR(255),
+  pincode VARCHAR(20),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+## API Endpoints
 ### `POST /signup`
-Creates a user and address using a transaction.
+Creates a user and their address in one request.
 
-Expected JSON body:
+Expected request body:
+
 ```json
 {
   "username": "Aarav",
@@ -58,77 +80,45 @@ Expected JSON body:
 }
 ```
 
+This endpoint is designed to demonstrate a multi-step write flow. First the user is inserted into `users`, then the returned user ID is used to insert the address into `address`.
+
 ### `GET /users?id=<userId>`
-Fetches joined user and address details by user ID.
+Fetches a user and their address using a join query.
 
 Example:
+
 ```bash
 curl "http://localhost:3000/users?id=8"
 ```
 
-## Database Schema for This Project
-Use these SQL statements to create the required tables.
+This endpoint shows the read side of relational data. Instead of making separate requests for user data and address data, the backend combines them into one query.
 
-```sql
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(100) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW()
-);
+## How The Data Flow Works
+The signup flow follows a safe pattern:
 
-CREATE TABLE address (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    city VARCHAR(100),
-    country VARCHAR(100),
-    street VARCHAR(255),
-    pincode VARCHAR(20),
-    created_at TIMESTAMP DEFAULT NOW()
-);
-```
+1. Accept user and address details from the request body.
+2. Start a transaction with `BEGIN`.
+3. Insert the user into `users`.
+4. Read the new user ID from the insert result.
+5. Insert the address into `address` using that ID.
+6. Commit the transaction if both inserts succeed.
+7. Roll back the transaction if anything fails.
 
-## Understanding Relational Queries
-A relational query is used when data is spread across multiple related tables.
+This is the important idea in the project: the two inserts must behave like one operation.
 
-In this project:
-- `users.id` is the parent key
-- `address.user_id` is the child foreign key
+## Why Transactions Matter
+Without a transaction, a failure can leave the database in a broken state.
 
-Relation:
-- One user can have one (or more) address rows depending on your business rule.
+Example problem:
 
-Basic relational query pattern:
-```sql
-SELECT u.username, u.email, a.city
-FROM users u
-JOIN address a ON u.id = a.user_id
-WHERE u.id = 8;
-```
+1. The user row is inserted successfully.
+2. The address insert fails.
+3. The database now contains a user without the matching address that the backend expected.
 
-## Transactions in PostgreSQL
-A transaction groups multiple SQL operations into one logical unit.
+Transactions prevent that inconsistency. Either both inserts succeed, or both are undone.
 
-If all operations succeed:
-- `COMMIT` saves all changes
+SQL example:
 
-If any operation fails:
-- `ROLLBACK` cancels all changes
-
-This is critical for multi-table writes.
-
-### Why transaction is needed in this project
-Without a transaction, this failure can happen:
-1. User inserted in `users`
-2. Address insert fails
-3. Result: inconsistent database (user exists without expected address)
-
-With transaction:
-- Either both inserts succeed
-- Or both are undone
-
-### SQL transaction example
 ```sql
 BEGIN;
 
@@ -136,128 +126,146 @@ INSERT INTO users (username, email, password)
 VALUES ('Riya', 'riya@example.com', 'Riya@123')
 RETURNING id;
 
--- Suppose returned id is 20
 INSERT INTO address (user_id, city, country, street, pincode)
 VALUES (20, 'Delhi', 'India', 'Connaught Place', '110001');
 
 COMMIT;
 ```
 
-If any query fails:
+If anything fails, the correct recovery action is:
+
 ```sql
 ROLLBACK;
 ```
 
-### Node.js transaction pattern used
-```js
-const client = await db.connect();
-try {
-  await client.query("BEGIN");
-  // insert query 1
-  // insert query 2
-  await client.query("COMMIT");
-} catch (error) {
-  await client.query("ROLLBACK");
-} finally {
-  client.release();
-}
-```
+## Why Joins Matter
+Joins let us read related data from multiple tables in one query.
 
-## Joins and Types of Joins
-Joins combine rows from two or more tables using a relationship condition.
+The project uses the relationship:
 
-In this project, the main relationship is:
-- `users.id` -> `address.user_id`
+- `users.id = address.user_id`
 
-In SQL terms:
-- `users` is often the parent table
-- `address` is the child table
+That means we can combine user data with address data directly in SQL instead of joining them manually in JavaScript.
 
-### Join Syntax Template
+Basic pattern:
+
 ```sql
-SELECT <columns>
-FROM table_a a
-<JOIN_TYPE> table_b b ON a.key = b.key;
-```
-
-### 1) INNER JOIN (only matching rows)
-Definition:
-- Returns rows where the join condition matches in both tables.
-- Non-matching rows from either table are excluded.
-
-Example:
-```sql
-SELECT u.id, u.username, a.city
+SELECT u.username, u.email, a.city
 FROM users u
-INNER JOIN address a ON u.id = a.user_id;
+JOIN address a ON u.id = a.user_id
+WHERE u.id = 8;
 ```
 
-When to use:
-- You need only complete relational records.
-- Example: show users only if an address exists.
+The current API uses an `INNER JOIN`, which only returns rows where both sides match.
 
-### 2) LEFT JOIN (all rows from left table)
-Definition:
-- Returns all rows from left table.
-- Matching rows from right table are included.
-- If no match exists on right side, right columns are `NULL`.
+## Join Types Learned In This Project
+This project was a useful way to learn the difference between common SQL joins.
 
-Example:
+### INNER JOIN
+Returns only matching rows from both tables.
+
+Use it when you want complete relational records and do not care about rows that are missing on either side.
+
+### LEFT JOIN
+Returns every row from the left table and matching rows from the right table.
+
+Use it when you want all users, even if some users do not yet have address records.
+
+### RIGHT JOIN
+Returns every row from the right table and matching rows from the left table.
+
+It is less commonly used, and many teams prefer rewriting it as a `LEFT JOIN` for readability.
+
+### FULL OUTER JOIN
+Returns every row from both tables, matched where possible.
+
+Use it for auditing, reconciliation, or finding missing links between tables.
+
+## Backend Walkthrough
+### Database Connection
+The app creates a PostgreSQL pool so it can reuse connections efficiently.
+
+### Signup Route
+The `/signup` route uses `express.json()` to parse the request body, then opens a client connection, starts a transaction, inserts the user, inserts the address, and commits if both succeed.
+
+This route also shows one practical detail: the backend accepts both `pincode` and the misspelled `picode` field, then falls back to whichever one is present. That makes the handler a little more forgiving while testing.
+
+### Users Lookup Route
+The `/users` route reads the user ID from the query string and runs a join query to return the combined user and address data in a single response.
+
+## Example Learning Query
+One of the clearest things this project teaches is how joins change the result set.
+
 ```sql
-SELECT u.id, u.username, a.city
+SELECT u.username, u.email, a.city, a.country, a.street, a.pincode
 FROM users u
-LEFT JOIN address a ON u.id = a.user_id;
+JOIN address a ON u.id = a.user_id
+WHERE u.id = $1;
 ```
 
-When to use:
-- You want all users, even if some users do not have address records yet.
+This query is simple, but it captures a real backend pattern: one entity in the API is often composed from several tables behind the scenes.
 
-### 3) RIGHT JOIN (all rows from right table)
-Definition:
-- Returns all rows from right table.
-- Matching rows from left table are included.
-- If no match exists on left side, left columns are `NULL`.
+## How To Run
+Install dependencies:
 
-Example:
-```sql
-SELECT u.id, u.username, a.city
-FROM users u
-RIGHT JOIN address a ON u.id = a.user_id;
+```bash
+npm install
 ```
 
-When to use:
-- You want to preserve all rows of right table in result.
-- Practical note: many teams rewrite RIGHT JOIN as LEFT JOIN for readability.
+Start the server:
 
-Equivalent rewrite:
-```sql
-SELECT u.id, u.username, a.city
-FROM address a
-LEFT JOIN users u ON u.id = a.user_id;
+```bash
+node index.js
 ```
 
-### 4) FULL OUTER JOIN (all rows from both tables)
-Definition:
-- Returns all rows from both tables.
-- Matching rows are merged.
-- Non-matching rows from either side appear with `NULL` for missing side.
+The app runs on:
 
-Example:
-```sql
-SELECT u.id, u.username, a.city, a.user_id
-FROM users u
-FULL OUTER JOIN address a ON u.id = a.user_id;
+- `http://localhost:3000`
+
+## How To Test
+### Create a user
+```bash
+curl -X POST http://localhost:3000/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username":"Riya",
+    "email":"riya@example.com",
+    "password":"Riya@123",
+    "city":"Delhi",
+    "country":"India",
+    "street":"Connaught Place",
+    "pincode":"110001"
+  }'
 ```
 
-When to use:
-- Audits, reconciliation, and data-quality checks.
+### Fetch a user by ID
+```bash
+curl "http://localhost:3000/users?id=8"
+```
 
-## Join Examples with Sample Tables and Data
-The following detailed sample shows exactly how each join behaves.
+## What We Learned
+This project helped reinforce a few important backend concepts:
 
-### 1) Create example tables
-```sql
-CREATE TABLE students (
+- Relational databases are built around links between tables, not just around separate records.
+- Foreign keys are what make those links explicit and reliable.
+- Transactions are essential whenever one request needs to update more than one table.
+- `COMMIT` and `ROLLBACK` are the difference between consistent data and half-finished writes.
+- Joins are the standard way to reconstruct related records when reading from the database.
+- `INNER JOIN`, `LEFT JOIN`, `RIGHT JOIN`, and `FULL OUTER JOIN` each answer a different data question.
+- Parameterized queries are the correct way to pass user input into SQL safely.
+
+## Future Improvements
+If this project grows further, the next useful upgrades would be:
+
+- Move database credentials into environment variables.
+- Add validation for required request fields.
+- Hash passwords before storing them.
+- Add a `dev` script with nodemon for easier local development.
+- Consider changing `/users?id=<id>` to `/users/:id` for cleaner API design.
+
+## Notes
+The current code is a learning project, so the README focuses on explaining the database behavior rather than hiding it behind abstractions. That makes it easier to understand how PostgreSQL transactions and joins work in a real backend flow.
+
   id SERIAL PRIMARY KEY,
   name VARCHAR(100) NOT NULL
 );
