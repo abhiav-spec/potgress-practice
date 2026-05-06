@@ -1,12 +1,9 @@
 import express from 'express';
-import  userRoutes from './routes/user.routes.js';
-
-// Middleware
-app.use(express.json());
-
-// Routes
-app.use("/api", userRoutes);
+import userRoutes from './routes/user.routes.js';
 
 const app = express();
+
+app.use(express.json());
+app.use('/api', userRoutes);
 
 export default app;
