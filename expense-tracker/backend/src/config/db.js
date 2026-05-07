@@ -11,7 +11,11 @@ const pool = new Pool({
     }
 });
 
-pool.connect()
+pool.on('error', (error) => {
+    console.error('Unexpected PostgreSQL pool error:', error);
+});
+
+pool.query('SELECT 1')
     .then(() => console.log('Connected to PostgreSQL database'))
     .catch((error) => console.error('Error connecting to PostgreSQL database:', error));
 
