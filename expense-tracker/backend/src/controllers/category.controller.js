@@ -52,3 +52,6 @@ const getCategoriesByTypeController = async (req, res) => {
         res.status(500).json({error: "Failed to fetch categories by type"});
     }
 };
+
+
+export {createCategoryController, getAllCategoriesController, deleteCategoryController, getCategoriesByTypeController};
