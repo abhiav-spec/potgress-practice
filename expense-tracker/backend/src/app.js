@@ -1,6 +1,7 @@
 import express from 'express';
 import userRoutes from './routes/user.routes.js';
 import transactionRoutes from './routes/transaction.routes.js';
+import categoryRoutes from './routes/category.routes.js';
 
 const app = express();
 
@@ -13,6 +14,6 @@ app.get('/api/health', (req, res) => {
 });
 app.use('/api/transactions', transactionRoutes);
 app.use('/api', userRoutes);
-app.use("/categories", categoryRoutes);
+app.use('/api', categoryRoutes);
 
 export default app;

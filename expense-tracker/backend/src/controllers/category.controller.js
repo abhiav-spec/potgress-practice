@@ -1,4 +1,4 @@
-import {createCategory, getAllCategories, deleteCategory} from "../models/category.model.js";
+import {createCategory, getAllCategories, deleteCategory, getCategoriesByType} from "../models/category.model.js";
 // Create category
 
 const createCategoryController = async (req, res) => {
