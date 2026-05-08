@@ -2,24 +2,39 @@ import db from "../config/db.js";
 
 // Create category
 export const createCategory = async (name, type) => {
-  const res = await db.query(
-    "INSERT INTO categories (name, type) VALUES ($1, $2) RETURNING *",
+  const result = await db.query(
+    `INSERT INTO categories (name, type)
+     VALUES ($1, $2)
+     RETURNING *`,
     [name, type]
   );
-  return res.rows[0];
+
+  return result.rows[0];
 };
 
 // Get all categories
-export const getCategories = async () => {
-  const res = await db.query("SELECT * FROM categories");
-  return res.rows;
+export const getAllCategories = async () => {
+  const result = await db.query(
+    "SELECT * FROM categories ORDER BY id DESC"
+  );
+
+  return result.rows;
 };
 
-// Get categories by type
+// Get categories by type (income/expense)
 export const getCategoriesByType = async (type) => {
-  const res = await db.query(
+  const result = await db.query(
     "SELECT * FROM categories WHERE type = $1",
     [type]
   );
-  return res.rows;
+
+  return result.rows;
+};
+
+// Delete category
+export const deleteCategory = async (id) => {
+  await db.query(
+    "DELETE FROM categories WHERE id = $1",
+    [id]
+  );
 };
