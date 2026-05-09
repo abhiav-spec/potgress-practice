@@ -2,9 +2,5 @@
   "name": "payment-gateway-practice",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["client", "server"],
-  "scripts": {
-    "start:server": "node server/server.js",
-    "start:client": "cd client && npm run dev"
-  }
+  "workspaces": ["client", "server"]
 }
