@@ -1,6 +1,11 @@
 import "./src/config/db.js"; // just import once
 import app from "./src/app.js";
+import dotenv from "dotenv";
 
-app.listen(3000, () => {
+dotenv.config();
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
   console.log("Server running");
 });
