@@ -2,5 +2,13 @@
   "name": "payment-gateway-practice",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["client", "server"]
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "dependencies": {
+    "body-parser": "^2.2.2",
+    "express": "^5.2.1",
+    "razorpay": "^2.9.6"
+  }
 }
