@@ -13,7 +13,26 @@ async function createuser() {
     console.log(user);
 }
 
+async function finduser() {
+    const user = await prisma.user.findUnique({
+        where: {
+            email: "john@example.com"
+        }
+    })
+    console.log(user);
+}
+
 createuser()
+    .then(async () => {
+        await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+        console.error(e);
+        await prisma.$disconnect();
+        process.exit(1);
+    });
+
+finduser()
     .then(async () => {
         await prisma.$disconnect();
     })

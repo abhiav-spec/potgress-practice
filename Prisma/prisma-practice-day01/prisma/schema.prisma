@@ -15,6 +15,7 @@ model User{
     email String @unique
     city String 
     password String
+    todos Todo[]
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
@@ -23,6 +24,8 @@ model Todo {
   id Int @id @default(autoincrement())
   title String
   description String
+  userId Int
+  user User @relation(fields: [userId], references: [id])
   isCompleted Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
