@@ -1,0 +1,10 @@
+{
+  "name": "webhooks-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "pnpm --filter \"*\" --parallel start",
+    "start:automator": "pnpm --filter automator start",
+    "start:lms": "pnpm --filter lms start"
+  }
+}
