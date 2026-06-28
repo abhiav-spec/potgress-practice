@@ -2,12 +2,105 @@
 
 This project shows how a Node.js backend can talk to Redis and MongoDB while those databases run locally in Docker containers.
 
+## Table of Contents
+
+- [What This Project Does](#what-this-project-does)
+- [About Bun](#about-bun)
+- [What Redis Is](#what-redis-is)
+- [Why Redis Is Useful](#why-redis-is-useful)
+- [Redis in Realtime Applications](#redis-in-realtime-applications)
+- [Docker And Docker Compose](#docker-and-docker-compose)
+- [Your Docker Compose File Explained Line By Line](#your-docker-compose-file-explained-line-by-line)
+- [How The App Connects To Redis And MongoDB](#how-the-app-connects-to-redis-and-mongodb)
+- [Redis With Other Databases](#redis-with-other-databases)
+- [When To Use Redis](#when-to-use-redis)
+- [How To Run This Project](#how-to-run-this-project)
+- [Project File Overview](#project-file-overview)
+- [Key Learning Summary](#key-learning-summary)
+
 ## What This Project Does
 
 - Starts a Node.js server from `src/index.js`
 - Connects to Redis
 - Connects to MongoDB
 - Uses Docker Compose to run Redis and MongoDB locally
+
+## About Bun
+
+Bun is a JavaScript runtime and package manager that can also act as a bundler and test runner.
+
+In simple words, Bun tries to do several developer tasks in one tool:
+
+- run JavaScript files
+- install packages
+- bundle code for production
+- run tests
+
+### Why People Use Bun
+
+Bun is popular because it is fast and convenient.
+
+It can be useful when you want:
+
+- quicker dependency installation
+- a single tool for install, build, and test workflows
+- a modern developer experience
+
+### Bun As Package Manager
+
+When you run commands like `bun install` or `bun add express`, Bun is acting like npm.
+
+That means it can:
+
+- read your package manifest
+- download packages
+- create or update a lockfile
+- manage dependencies for the project
+
+### Bun As Runtime
+
+Bun can also run JavaScript files directly, similar to Node.js.
+
+For example:
+
+- `bun src/index.js`
+- `bun run dev`
+
+### Bun In This Project
+
+In this project, Bun was useful for package installation, but Node.js is used as the runtime for the server.
+
+Why:
+
+- the project uses Mongoose
+- Mongoose depends on MongoDB internals
+- some MongoDB internals can require Node-specific behavior that Bun may not fully support in every case
+
+So the practical setup here is:
+
+- Bun for package management when needed
+- Node.js for running the backend server
+
+### Bun vs Node.js
+
+| Feature | Bun | Node.js |
+|---|---|---|
+| Main role | Runtime + package manager + bundler | Runtime |
+| Package install | Built in | Uses npm/pnpm/yarn |
+| Server execution | Can run JS files | Runs JS files |
+| Ecosystem maturity | Newer | Very mature |
+| Compatibility | Still growing | Widest compatibility |
+
+### Simple Bun Flow
+
+```mermaid
+flowchart LR
+  Dev[Developer] --> Bun[Bun]
+  Bun --> Install[Install Packages]
+  Bun --> Run[Run JavaScript]
+  Install --> Project[Project Dependencies]
+  Run --> App[Application Code]
+```
 
 ## What Redis Is
 
@@ -103,7 +196,7 @@ Without Docker Compose, you would need to:
 
 With Docker Compose, one command starts everything.
 
-## Your docker-compose.yml Explained Line By Line
+## Your Docker Compose File Explained Line By Line
 
 Your current file is:
 
