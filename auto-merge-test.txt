@@ -1,0 +1,2 @@
+Testing auto-merge workflow functionality.
+This PR should auto-merge to main.
